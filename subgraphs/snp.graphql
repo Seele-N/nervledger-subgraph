@@ -1,0 +1,15 @@
+type SnpMaster @entity {
+  id: ID!
+  totalMintReward: BigInt!
+  poolLength: BigInt!
+}
+
+type SnpMasterPool @entity {
+  id: ID!
+  balance: BigInt!
+  lpToken: Bytes!
+  allocPoint: BigInt!
+  addedBlock: BigInt!
+  addedTs: BigInt!
+}
+
