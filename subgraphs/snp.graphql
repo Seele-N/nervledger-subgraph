@@ -13,3 +13,10 @@ type SnpMasterPool @entity {
   addedTs: BigInt!
 }
 
+type SnpMasterPoolUser @entity {
+  id: ID!
+  poolid: BigInt!
+  balance: BigInt!
+  depositTime: BigInt!
+}
+
