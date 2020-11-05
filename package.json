@@ -10,8 +10,8 @@
     "build:snp": "graph build subgraphs/snp.yaml",
     "deploy": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/",
     "deploy:snp": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ lkbtboy/snp subgraphs/snp.yaml",
-    "create-local": "graph create --node http://localhost:8020/ /snp/snp",
-    "remove-local": "graph remove --node http://localhost:8020/ /snp/snp",
+    "create-local": "graph create --node http://localhost:8020/ /lkbtboy/snp",
+    "remove-local": "graph remove --node http://localhost:8020/ /lkbtboy/snp",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 /lkbtboy/snp"
   },
   "devDependencies": {

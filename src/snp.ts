@@ -11,6 +11,8 @@ import {
   SnpMaster as SnpMasterEntity,
   SnpMasterPool,
   SnpMasterPoolUser,
+  SnpPoolDayData,
+  SnpPoolTransation
 } from "../generated/schema";
 
 const MASTER_ADDY = '0x7C5592faD8031e62318DAbD81e2211E50A231Ffb'
@@ -22,6 +24,8 @@ export function handleDeposit(event: Deposit): void {
   let info = snpMaster.poolInfo(event.params.pid)
   pool.balance = info.value2;//pool.balance.plus(event.params.amount);
   pool.save();
+  updatePoolDayData(event.params.pid,event);
+  updateSnpPoolTransation(event.params.pid,event.params.amount,BigInt.fromI32(0),event);
 }
 
 export function handleEmergencyWithdraw(event: EmergencyWithdraw): void {
@@ -31,6 +35,8 @@ export function handleEmergencyWithdraw(event: EmergencyWithdraw): void {
   let info = snpMaster.poolInfo(event.params.pid)
   pool.balance = info.value2;//pool.balance.minus(event.params.amount);
   pool.save();
+  updatePoolDayData(event.params.pid,event);
+  updateSnpPoolTransation(event.params.pid,event.params.amount,BigInt.fromI32(2),event);
 }
 
 export function handleWithdraw(event: Withdraw): void {
@@ -40,6 +46,8 @@ export function handleWithdraw(event: Withdraw): void {
   let info = snpMaster.poolInfo(event.params.pid)
   pool.balance = info.value2;//pool.balance.minus(event.params.amount);
   pool.save();
+  updatePoolDayData(event.params.pid,event);
+  updateSnpPoolTransation(event.params.pid,event.params.amount,BigInt.fromI32(1),event);
 }
 
 export function handleSetPoolAllocPoint(event: SetCall): void {
@@ -86,19 +94,17 @@ function getPoolEntity(poolId: BigInt, block: ethereum.Block): SnpMasterPool {
 
 function getPoolUserEntity(poolId: BigInt, address: Address): SnpMasterPoolUser {
   let snpMaster = SnpMaster.bind(Address.fromString(MASTER_ADDY));
-  let user = SnpMasterPoolUser.load(poolId.toString()+address.toString());
+  let user = SnpMasterPoolUser.load(poolId.toString()+address.toHexString());
   let userInfo = snpMaster.userInfo(poolId,address);
   if (user == null) {
     // init new pool user entity
-    user = new SnpMasterPoolUser(poolId.toString()+address.toString());
-    user.balance = BigInt.fromI32(0);
-    user.depositTime = BigInt.fromI32(0);
+    user = new SnpMasterPoolUser(poolId.toString()+address.toHexString());
     user.poolid = poolId;
-  }else{
-    user.balance = userInfo.value0;
-    user.depositTime = userInfo.value2;
-    user.poolid = poolId;
+    user.address = address
   }
+  user.balance = userInfo.value0;
+  user.depositTime = userInfo.value2;
+  
 
   user.save()
 
@@ -116,4 +122,52 @@ function getSnpMasterEntity(): SnpMasterEntity {
   }
 
   return entity as SnpMasterEntity;
+}
+
+function updatePoolDayData(poolid: BigInt, event: ethereum.Event): SnpPoolDayData{
+
+  let timestamp = event.block.timestamp.toI32();
+  let dayID = timestamp / 86400;
+  let dayStartTimestamp = dayID * 86400;
+  let poolDayID = poolid
+    .toString()
+    .concat('-')
+    .concat(BigInt.fromI32(dayID).toString());
+
+  let snpMaster = SnpMaster.bind(Address.fromString(MASTER_ADDY));
+  let info  = snpMaster.poolInfo(poolid);
+  let poolDayData = SnpPoolDayData.load(poolDayID)
+  if (poolDayData === null) {
+    poolDayData = new SnpPoolDayData(poolDayID)
+    poolDayData.date = dayStartTimestamp
+    poolDayData.poolid = poolid
+    poolDayData.lpToken = info.value0;
+    poolDayData.totalToken = BigInt.fromI32(0)
+  }
+  poolDayData.totalToken = info.value2;
+  poolDayData.save();
+
+  return poolDayData as SnpPoolDayData;
+}
+
+function updateSnpPoolTransation(poolid: BigInt,amount:BigInt,operator:BigInt, event: ethereum.Event): SnpPoolTransation{
+
+  if (amount==BigInt.fromI32(0)){
+    return null as SnpPoolTransation;
+  }
+
+  let timestamp = event.block.timestamp.toI32();
+  let transactionHash = event.transaction.hash.toHexString()
+  let poolTransation = SnpPoolTransation.load(transactionHash)
+  if (poolTransation === null) {
+    poolTransation = new SnpPoolTransation(transactionHash)
+    poolTransation.blockNumber = event.block.number;
+    poolTransation.timestamp = timestamp;
+    poolTransation.address = event.transaction.from;
+    poolTransation.poolid = poolid;
+    poolTransation.operator = operator.toI32();
+    poolTransation.amount = amount;
+    poolTransation.save();
+  }
+  return poolTransation as SnpPoolTransation;
 }

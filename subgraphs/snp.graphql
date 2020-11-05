@@ -15,8 +15,27 @@ type SnpMasterPool @entity {
 
 type SnpMasterPoolUser @entity {
   id: ID!
+  address: Bytes!
   poolid: BigInt!
   balance: BigInt!
   depositTime: BigInt!
+}
+
+type SnpPoolDayData @entity {
+  id: ID!
+  date: Int!
+  poolid: BigInt!
+  lpToken: Bytes!
+  totalToken: BigInt!
+}
+
+type SnpPoolTransation @entity {
+  id: ID!
+  blockNumber: BigInt!
+  timestamp: Int!
+  address: Bytes!
+  poolid: BigInt!
+  amount: BigInt!
+  operator: Int!
 }
 
